@@ -53,7 +53,7 @@ def run_inference(img):
     cls_int.invoke()
     cls_pred = cls_int.get_tensor(cls_int.get_output_details()[0]['index'])[0]
     cls_idx = int(np.argmax(cls_pred))
-    cls_label = class_labels[str(cls_idx)]
+    cls_label = class_labels[cls_idx]
     cls_conf = float(np.max(cls_pred))
 
     # Segmentation (quantized model)
