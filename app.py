@@ -45,7 +45,7 @@ def preprocess(img, size, dtype=tf.float32, scale=1.0, zero_point=0):
     return np.expand_dims(img, axis=0)
 
 def run_inference(img):
-    # Classification (assuming float32 model)
+    # Classification
     cls_input_details = cls_int.get_input_details()
     cls_dtype = cls_input_details[0]['dtype']
     cls_input = preprocess(img, (224, 224), dtype=cls_dtype)
@@ -56,7 +56,7 @@ def run_inference(img):
     cls_label = class_labels[cls_idx]
     cls_conf = float(np.max(cls_pred))
 
-    # Segmentation (quantized model)
+    # Segmentation
     seg_input_details = seg_int.get_input_details()
     seg_input_dtype = seg_input_details[0]['dtype']
     seg_scale, seg_zero_point = seg_input_details[0]['quantization']
@@ -65,7 +65,7 @@ def run_inference(img):
     seg_int.invoke()
     seg_pred = seg_int.get_tensor(seg_int.get_output_details()[0]['index'])[0]
 
-    # For segmentation output, if output is quantized, dequantize it:
+    # Dequantize if needed
     seg_output_details = seg_int.get_output_details()[0]
     seg_out_scale, seg_out_zero_point = seg_output_details['quantization']
     if seg_output_details['dtype'] in [np.uint8, np.int8]:
@@ -77,14 +77,19 @@ def run_inference(img):
         seg_mask = np.argmax(seg_pred, axis=-1)
 
     seg_mask = (seg_mask > 0.5).astype(np.uint8)
+
+    # Resize mask back to original image size
+    seg_mask = cv2.resize(seg_mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+
     return cls_label, cls_conf, seg_mask
 
 def overlay_mask(image, mask):
-    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     overlay = image.copy()
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        cv2.rectangle(overlay, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if w > 10 and h > 10:  # Filter out tiny noise
+            cv2.rectangle(overlay, (x, y), (x + w, y + h), (0, 255, 0), 2)
     return overlay
 
 st.title("🧵 Cloth Defects Detection and Segmentation")
