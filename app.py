@@ -240,7 +240,7 @@ def create_segmented_output(original_img, mask):
     return segmented
 
 # App layout
-st.markdown('<div class="header"><h1>🧵 Advanced Cloth Defects Detection</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>🧵 Advanced Cloth Analysis System</h1></div>', unsafe_allow_html=True)
 
 # Sidebar for controls
 with st.sidebar:
@@ -251,9 +251,9 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### ℹ️ About")
-    st.markdown("This app detects and segments defects in cloth images using deep learning models.")
+    st.markdown("This app identifies cloth types and detects defects in cloth images using deep learning models.")
     st.markdown("**Models:**")
-    st.markdown("- Classifier: Identifies defect type")
+    st.markdown("- Classifier: Identifies cloth type")
     st.markdown("- Segmenter: Locates defect areas")
     
     with st.expander("📊 Performance Metrics"):
@@ -286,7 +286,7 @@ if uploaded:
     st.markdown(f'<div class="fade-in"><div class="card"><h3>🔬 Analysis Results</h3></div></div>', unsafe_allow_html=True)
     
     # Confidence meter
-    st.markdown(f'<div class="fade-in"><div class="card"><h4>Defect Classification</h4>', unsafe_allow_html=True)
+    st.markdown(f'<div class="fade-in"><div class="card"><h4>Cloth Classification</h4>', unsafe_allow_html=True)
     st.markdown(f'<p><strong>Type:</strong> {label}</p>', unsafe_allow_html=True)
     
     # Animated confidence meter
@@ -300,7 +300,7 @@ if uploaded:
         st.markdown('<div class="card"><h4>Detected Defects</h4></div>', unsafe_allow_html=True)
         col1, col2 = st.columns([3, 1])
         with col1:
-            st.image(overlay, use_column_width=True, caption="Original with defect overlay")
+            st.image(overlay, use_column_width=True, caption=f"{label} with defect overlay")
         with col2:
             st.metric("Defect Areas", f"{np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100:.2f}%")
     
@@ -352,8 +352,8 @@ if uploaded:
     with col3:
         st.download_button(
             label="📄 Download Report",
-            data=f"Defect Type: {label}\nConfidence: {confidence:.2f}\nDefect Area: {np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100:.2f}%",
-            file_name="defect_report.txt",
+            data=f"Cloth Type: {label}\nConfidence: {confidence:.2f}\nDefect Area: {np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100:.2f}%",
+            file_name="cloth_analysis_report.txt",
             mime="text/plain"
         )
 else:
@@ -363,20 +363,20 @@ else:
         <ol>
             <li>Upload an image of cloth material using the uploader above</li>
             <li>The system will automatically analyze the image</li>
-            <li>View the detected defects and classification results</li>
+            <li>View the identified cloth type and detected defects</li>
             <li>Explore different visualization options in the tabs</li>
             <li>Download the results if needed</li>
         </ol>
-        <p><strong>Tip:</strong> For best results, use well-lit, high-resolution images with clear defects.</p>
+        <p><strong>Tip:</strong> For best results, use well-lit, high-resolution images with clear details.</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Sample images
-    st.markdown('<div class="card"><h4>Sample Defect Images</h4></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.image("https://via.placeholder.com/300x200?text=Hole+Defect", caption="Hole Defect")
+        st.image("https://via.placeholder.com/300x200?text=Cotton", caption="Cotton")
     with col2:
-        st.image("https://via.placeholder.com/300x200?text=Stain+Defect", caption="Stain Defect")
+        st.image("https://via.placeholder.com/300x200?text=Silk", caption="Silk")
     with col3:
-        st.image("https://via.placeholder.com/300x200?text=Tear+Defect", caption="Tear Defect")
+        st.image("https://via.placeholder.com/300x200?text=Denim", caption="Denim")
