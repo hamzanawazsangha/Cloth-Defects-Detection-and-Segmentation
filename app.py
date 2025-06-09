@@ -263,7 +263,6 @@ with st.sidebar:
 
 # Main content
 with stylable_container(
-    key="uploader",
     css_styles="""
         {
             border: 2px dashed #4a89dc;
