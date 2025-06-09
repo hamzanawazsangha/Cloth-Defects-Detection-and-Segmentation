@@ -1,6 +1,13 @@
+# Streamlit UI
 streamlit==1.35.0
-numpy==1.26.4
+
+# TensorFlow Lite CPU version (compatible with Python ≤ 3.11)
+tensorflow-cpu==2.15.0
+
+# Image processing
 opencv-python==4.9.0.80
 Pillow==10.3.0
-matplotlib==3.8.4
-tflite-runtime==2.13.0
+numpy==1.26.4
+
+# Optional (if using JSON files for labels)
+jsonschema==4.22.0
