@@ -8,8 +8,8 @@ import json
 # --- Load TFLite Models ---
 @st.cache_resource
 def load_interpreters():
-    cls_int = tf.lite.Interpreter(model_path="classifier_model.tflite")
-    seg_int = tf.lite.Interpreter(model_path="segmenter_model.tflite")
+    cls_int = tf.lite.Interpreter(model_path="classifier.tflite")
+    seg_int = tf.lite.Interpreter(model_path="segmenter.tflite")
     cls_int.allocate_tensors()
     seg_int.allocate_tensors()
     return cls_int, seg_int
