@@ -5,88 +5,78 @@ import cv2
 from PIL import Image
 import json
 
-# --- Load class names ---
-:contentReference[oaicite:4]{index=4}
-    :contentReference[oaicite:5]{index=5}
+# --- Load TFLite Models ---
+@st.cache_resource
+def load_interpreters():
+    cls_int = tf.lite.Interpreter(model_path="classifier_model.tflite")
+    seg_int = tf.lite.Interpreter(model_path="segmenter_model.tflite")
+    cls_int.allocate_tensors()
+    seg_int.allocate_tensors()
+    return cls_int, seg_int
 
-# --- Load TFLite interpreters ---
-:contentReference[oaicite:6]{index=6}
-cls_int.allocate_tensors()
-:contentReference[oaicite:7]{index=7}
-:contentReference[oaicite:8]{index=8}
+# --- Load Class Labels ---
+@st.cache_resource
+def load_labels():
+    with open("class_labels.json") as f:
+        return json.load(f)
 
-:contentReference[oaicite:9]{index=9}
-seg_int.allocate_tensors()
-:contentReference[oaicite:10]{index=10}
-:contentReference[oaicite:11]{index=11}
+cls_int, seg_int = load_interpreters()
+class_labels = load_labels()
 
-# --- Helpers ---
-:contentReference[oaicite:12]{index=12}
-    :contentReference[oaicite:13]{index=13}
-    :contentReference[oaicite:14]{index=14}
+# --- Preprocessing Helper ---
+def preprocess(img, size):
+    img = cv2.resize(img, size)
+    img = img.astype(np.float32) / 255.0
+    return np.expand_dims(img, axis=0)
 
-:contentReference[oaicite:15]{index=15}
+# --- Inference Function ---
+def run_inference(img):
     # Classify
-    :contentReference[oaicite:16]{index=16}
-    :contentReference[oaicite:17]{index=17}
+    cls_input = preprocess(img, (224, 224))
+    cls_in = cls_int.get_input_details()
+    cls_out = cls_int.get_output_details()
+    cls_int.set_tensor(cls_in[0]['index'], cls_input)
     cls_int.invoke()
-    :contentReference[oaicite:18]{index=18}
-    :contentReference[oaicite:19]{index=19}
-    :contentReference[oaicite:20]{index=20}
+    cls_pred = cls_int.get_tensor(cls_out[0]['index'])[0]
+    cls_idx = int(np.argmax(cls_pred))
+    cls_label = class_labels[str(cls_idx)]
+    cls_conf = float(np.max(cls_pred))
 
     # Segment
-    inp2 = preprocess(img, (256,256))
-    seg_int.set_tensor(seg_in[0]['index'], inp2)
+    seg_input = preprocess(img, (256, 256))
+    seg_in = seg_int.get_input_details()
+    seg_out = seg_int.get_output_details()
+    seg_int.set_tensor(seg_in[0]['index'], seg_input)
     seg_int.invoke()
     seg_pred = seg_int.get_tensor(seg_out[0]['index'])[0]
+    
     if seg_pred.shape[-1] == 1:
-        seg_mask = seg_pred[:,:,0]
+        seg_mask = seg_pred[:, :, 0]
     else:
         seg_mask = np.argmax(seg_pred, axis=-1)
     seg_mask = (seg_mask > 0.5).astype(np.uint8)
     return cls_label, cls_conf, seg_mask
 
-:contentReference[oaicite:21]{index=21}
-    :contentReference[oaicite:22]{index=22}
-    :contentReference[oaicite:23]{index=23}
-    :contentReference[oaicite:24]{index=24}
-    :contentReference[oaicite:25]{index=25}
-    # bounding box
-    :contentReference[oaicite:26]{index=26}
-    if cnts:
-        :contentReference[oaicite:27]{index=27}
-        :contentReference[oaicite:28]{index=28}
-        :contentReference[oaicite:29]{index=29}
-                    :contentReference[oaicite:30]{index=30}
+# --- Overlay Bounding Boxes ---
+def overlay_mask(image, mask):
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    overlay = image.copy()
+    for cnt in contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        cv2.rectangle(overlay, (x, y), (x+w, y+h), (0, 255, 0), 2)
     return overlay
 
 # --- Streamlit UI ---
-:contentReference[oaicite:31]{index=31}
-:contentReference[oaicite:32]{index=32}
+st.title("🧵 Cloth Defects Detection and Segmentation")
+uploaded = st.file_uploader("Upload a cloth image", type=["jpg", "jpeg", "png"])
 
-:contentReference[oaicite:33]{index=33}
-    :contentReference[oaicite:34]{index=34}
-    if uploaded:
-        :contentReference[oaicite:35]{index=35}
-        :contentReference[oaicite:36]{index=36}
-        :contentReference[oaicite:37]{index=37}
-        :contentReference[oaicite:38]{index=38}
-        :contentReference[oaicite:39]{index=39}
+if uploaded:
+    image = Image.open(uploaded).convert("RGB")
+    img_np = np.array(image)
 
-else:
-    :contentReference[oaicite:40]{index=40}
-    :contentReference[oaicite:41]{index=41}
-    :contentReference[oaicite:42]{index=42}
-    :contentReference[oaicite:43]{index=43}
-    while run:
-        :contentReference[oaicite:44]{index=44}
-        :contentReference[oaicite:45]{index=45}
-            :contentReference[oaicite:46]{index=46}
-            break
-        :contentReference[oaicite:47]{index=47}
-        :contentReference[oaicite:48]{index=48}
-        :contentReference[oaicite:49]{index=49}
-        :contentReference[oaicite:50]{index=50}
-        :contentReference[oaicite:51]{index=51}
-    else:
-        camera.release()
+    with st.spinner("Analyzing..."):
+        label, confidence, mask = run_inference(img_np)
+        overlay = overlay_mask(img_np, mask)
+
+    st.subheader(f"Defect Class: {label} ({confidence:.2f})")
+    st.image(overlay, caption="Detected Defects", use_column_width=True)
