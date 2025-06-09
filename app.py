@@ -24,37 +24,41 @@ cls_int, seg_int = load_interpreters()
 class_labels = load_labels()
 
 # --- Preprocessing Helper ---
-def preprocess(img, size):
+def preprocess(img, size, dtype=tf.float32):
     img = cv2.resize(img, size)
-    img = img.astype(np.float32) / 255.0
+    if dtype == tf.uint8:
+        img = img.astype(np.uint8)
+    else:
+        img = img.astype(np.float32) / 255.0
     return np.expand_dims(img, axis=0)
 
 # --- Inference Function ---
 def run_inference(img):
-    # Classify
-    cls_input = preprocess(img, (224, 224))
-    cls_in = cls_int.get_input_details()
-    cls_out = cls_int.get_output_details()
-    cls_int.set_tensor(cls_in[0]['index'], cls_input)
+    # --- Classification ---
+    cls_input_details = cls_int.get_input_details()
+    cls_dtype = cls_input_details[0]['dtype']
+    cls_input = preprocess(img, (224, 224), dtype=cls_dtype)
+    cls_int.set_tensor(cls_input_details[0]['index'], cls_input)
     cls_int.invoke()
-    cls_pred = cls_int.get_tensor(cls_out[0]['index'])[0]
+    cls_pred = cls_int.get_tensor(cls_int.get_output_details()[0]['index'])[0]
     cls_idx = int(np.argmax(cls_pred))
     cls_label = class_labels[str(cls_idx)]
     cls_conf = float(np.max(cls_pred))
 
-    # Segment
-    seg_input = preprocess(img, (256, 256))
-    seg_in = seg_int.get_input_details()
-    seg_out = seg_int.get_output_details()
-    seg_int.set_tensor(seg_in[0]['index'], seg_input)
+    # --- Segmentation ---
+    seg_input_details = seg_int.get_input_details()
+    seg_dtype = seg_input_details[0]['dtype']
+    seg_input = preprocess(img, (256, 256), dtype=seg_dtype)
+    seg_int.set_tensor(seg_input_details[0]['index'], seg_input)
     seg_int.invoke()
-    seg_pred = seg_int.get_tensor(seg_out[0]['index'])[0]
-    
+    seg_pred = seg_int.get_tensor(seg_int.get_output_details()[0]['index'])[0]
+
     if seg_pred.shape[-1] == 1:
         seg_mask = seg_pred[:, :, 0]
     else:
         seg_mask = np.argmax(seg_pred, axis=-1)
     seg_mask = (seg_mask > 0.5).astype(np.uint8)
+
     return cls_label, cls_conf, seg_mask
 
 # --- Overlay Bounding Boxes ---
@@ -63,7 +67,7 @@ def overlay_mask(image, mask):
     overlay = image.copy()
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        cv2.rectangle(overlay, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        cv2.rectangle(overlay, (x, y), (x + w, y + h), (0, 255, 0), 2)
     return overlay
 
 # --- Streamlit UI ---
