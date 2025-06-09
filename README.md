@@ -82,7 +82,7 @@ E & F --> G[Visualization + Report]
 
 ### **Quick Start (Local Deployment)**  
 ```bash
-git clone https://github.com/your-repo/cloth-defect-detection.git
+git clone https://github.com/hamzanawazsangha/Cloth-Defects-Detection-and-Segmentation.git
 cd cloth-defect-detection
 pip install -r requirements.txt
 streamlit run app.py
