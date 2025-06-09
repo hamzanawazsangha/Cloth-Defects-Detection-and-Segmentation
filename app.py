@@ -4,7 +4,6 @@ import tensorflow as tf
 import cv2
 from PIL import Image
 import json
-from streamlit_extras.stylable_container import stylable_container
 import time
 
 # Custom CSS for enhanced UI
@@ -28,16 +27,17 @@ st.markdown("""
     }
     
     /* Uploader styling */
-    .uploader {
+    .uploader-container {
         border: 2px dashed #4a89dc;
         border-radius: 10px;
         padding: 2rem;
         text-align: center;
         background-color: rgba(74, 137, 220, 0.05);
         transition: all 0.3s ease;
+        margin-bottom: 2rem;
     }
     
-    .uploader:hover {
+    .uploader-container:hover {
         background-color: rgba(74, 137, 220, 0.1);
     }
     
@@ -261,25 +261,12 @@ with st.sidebar:
         st.metric("Avg Inference Time", "1.2s")
         st.metric("Accuracy", "92.5%")
 
-# Main content
-with stylable_container(
-    key="uploader",
-    css_styles="""
-        {
-            border: 2px dashed #4a89dc;
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            background-color: rgba(74, 137, 220, 0.05);
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-        }
-        :hover {
-            background-color: rgba(74, 137, 220, 0.1);
-        }
-    """,
-):
+# Main content - Uploader with custom styling
+uploader_container = st.container()
+with uploader_container:
+    st.markdown('<div class="uploader-container">', unsafe_allow_html=True)
     uploaded = st.file_uploader("Upload a cloth image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if uploaded:
     # Display processing animation
