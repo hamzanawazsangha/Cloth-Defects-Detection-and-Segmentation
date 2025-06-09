@@ -11,3 +11,5 @@ numpy==1.26.4
 
 # Optional (if using JSON files for labels)
 jsonschema==4.22.0
+
+streamlit-extras
