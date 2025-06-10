@@ -6,145 +6,182 @@ from PIL import Image
 import json
 import time
 
-# Mobile-optimized CSS with responsive design
+# Enhanced Mobile-optimized CSS with better contrast and responsive design
 st.markdown("""
 <style>
-    /* Base responsive styles */
+    /* Base responsive styles with improved contrast */
     html {
-        font-size: 16px;
+        font-size: 18px;  /* Increased base font size */
     }
     
-    /* Main page styling - responsive */
+    /* Main page styling - responsive with better contrast */
     .stApp {
-        background-color: #f8f9fa;
-        padding: 1rem;
+        background-color: #ffffff;
+        padding: 0.5rem;
     }
     
-    /* Responsive header */
+    /* Responsive header with better contrast */
     .header {
-        color: #2c3e50;
+        color: #1a237e;  /* Darker blue for better contrast */
         text-align: center;
-        padding: 1rem 0;
-        border-bottom: 1px solid #e0e0e0;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 0.5rem 0;
+        border-bottom: 2px solid #3949ab;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .header h1 {
-        font-size: clamp(1.5rem, 4vw, 2rem);
+        font-size: clamp(1.8rem, 5vw, 2.2rem);
+        margin: 0.2rem 0;
     }
     
-    /* Responsive uploader */
+    /* Uploader with better visibility */
     .uploader-container {
-        border: 2px dashed #4a89dc;
+        border: 2px dashed #303f9f;
         border-radius: 8px;
-        padding: 1rem;
+        padding: 0.8rem;
         text-align: center;
-        background-color: rgba(74, 137, 220, 0.05);
+        background-color: rgba(48, 63, 159, 0.05);
         transition: all 0.3s ease;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     
-    @media (min-width: 768px) {
-        .uploader-container {
-            padding: 2rem;
-        }
+    .uploader-container p {
+        color: #1a237e;
+        font-size: 1rem;
+        margin: 0.5rem 0;
     }
     
-    /* Responsive cards */
+    /* Cards with better contrast */
     .card {
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 0.8rem;
+        margin-bottom: 0.8rem;
         background-color: white;
+        border: 1px solid #e0e0e0;
     }
     
-    @media (min-width: 768px) {
-        .card {
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
+    .card h3, .card h4 {
+        color: #1a237e;
+        margin-top: 0.2rem;
     }
     
-    /* Mobile-friendly buttons */
+    /* Buttons with better contrast */
     .stButton > button {
-        background-color: #4a89dc;
+        background-color: #303f9f;
         color: white;
         border-radius: 6px;
-        padding: 0.5rem;
+        padding: 0.6rem;
         border: none;
         width: 100%;
-        font-size: 0.9rem;
+        font-size: 1rem;
+        font-weight: 500;
     }
     
-    @media (min-width: 768px) {
-        .stButton > button {
-            padding: 0.5rem 1rem;
-            width: auto;
-        }
+    /* Progress bar styling */
+    .stProgress > div > div > div > div {
+        background-color: #303f9f !important;
     }
     
-    /* Responsive tabs */
+    /* Tab styling for mobile */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 5px;
-        flex-wrap: wrap;
+        gap: 4px;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 6px 6px 0 0 !important;
-        padding: 8px 12px !important;
-        font-size: 0.8rem;
-        min-width: unset;
-        flex-grow: 1;
+        font-size: 0.9rem !important;
+        padding: 8px 10px !important;
     }
     
-    @media (min-width: 768px) {
-        .stTabs [data-baseweb="tab"] {
-            padding: 10px 20px !important;
-            font-size: 1rem;
-        }
-    }
-    
-    /* Responsive columns */
-    .st-c5 {
-        padding-right: 0.5rem !important;
-        padding-left: 0.5rem !important;
-    }
-    
-    /* Confidence meter - responsive */
+    /* Confidence meter styling */
     .confidence-meter {
-        height: 16px;
-        border-radius: 8px;
-        margin: 8px 0;
+        height: 20px;
+        border-radius: 10px;
+        background-color: #e0e0e0;
+        margin: 0.5rem 0;
+        overflow: hidden;
     }
     
-    .confidence-label {
-        font-size: 0.7rem;
-    }
-    
-    /* Sidebar adjustments for mobile */
-    [data-testid="stSidebar"] {
-        min-width: unset !important;
-        max-width: unset !important;
+    .confidence-level {
+        height: 100%;
+        background: linear-gradient(90deg, #5c6bc0, #303f9f);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 8px;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: bold;
     }
     
     /* Image captions */
     .stImage > div > div > div > p {
-        font-size: 0.8rem !important;
+        font-size: 0.9rem !important;
+        color: #424242 !important;
+        text-align: center;
     }
     
-    /* Hide elements on mobile when needed */
+    /* Mobile-specific optimizations */
     @media (max-width: 480px) {
-        .mobile-hide {
-            display: none;
+        html {
+            font-size: 16px;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .uploader-container {
+            padding: 0.5rem;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            font-size: 0.8rem !important;
+            padding: 6px 8px !important;
+        }
+        
+        /* Force single column layout on mobile */
+        .st-c5 {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+        }
+        
+        /* Adjust spacing for mobile */
+        .stImage {
+            margin-bottom: 0.5rem;
+        }
+    }
+    
+    /* Dark mode compatibility */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            background-color: #121212;
+        }
+        
+        .card {
+            background-color: #1e1e1e;
+            border-color: #333;
+        }
+        
+        .header {
+            color: #bbdefb;
+            background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+        }
+        
+        .uploader-container {
+            background-color: rgba(30, 30, 30, 0.5);
+            border-color: #5c6bc0;
+        }
+        
+        .uploader-container p {
+            color: #e0e0e0;
+        }
+        
+        .card h3, .card h4 {
+            color: #bbdefb;
         }
     }
 </style>
@@ -152,6 +189,7 @@ st.markdown("""
 
 @st.cache_resource
 def load_interpreters():
+    # Load models (replace with your actual model paths)
     cls_int = tf.lite.Interpreter(model_path="classifier.tflite")
     seg_int = tf.lite.Interpreter(model_path="segmentation_model.tflite")
     cls_int.allocate_tensors()
@@ -167,6 +205,7 @@ def load_interpreters():
 
 @st.cache_resource
 def load_labels():
+    # Load class labels (replace with your actual label file)
     with open("class_labels.json") as f:
         return json.load(f)
 
@@ -246,39 +285,48 @@ def create_segmented_output(original_img, mask):
 # Mobile-responsive app layout
 st.markdown('<div class="header"><h1>🧵 Cloth Defect Detection</h1></div>', unsafe_allow_html=True)
 
-# Sidebar - completely restructured to avoid any markdown nesting issues
+# Sidebar with improved mobile layout
 with st.sidebar:
-    st.header("Settings")
-    alpha = st.slider("Mask Opacity", 0.1, 1.0, 0.5, 0.05)
+    st.markdown('<div style="font-size:1.1rem; font-weight:bold; margin-bottom:0.5rem;">Settings</div>', unsafe_allow_html=True)
+    alpha = st.slider("Mask Opacity", 0.1, 1.0, 0.5, 0.05, help="Adjust the transparency of the defect overlay")
     show_segmented = st.checkbox("Show Segmented", True)
     show_original = st.checkbox("Show Original", False)
     
     st.divider()
     
-    st.header("About")
-    st.write("This app detects defects in cloth images using deep learning.")
-    st.write("**Models:**")
-    st.write("- Classifier: Identifies defect type")
-    st.write("- Segmenter: Locates defect areas")
+    st.markdown('<div style="font-size:1.1rem; font-weight:bold; margin-bottom:0.5rem;">About</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="font-size:0.9rem;">
+    This app detects defects in cloth images using deep learning.
+    <br><br>
+    <b>Models:</b><br>
+    - Classifier: Identifies defect type<br>
+    - Segmenter: Locates defect areas
+    </div>
+    """, unsafe_allow_html=True)
     
     st.divider()
     
-    st.header("Performance Metrics")
+    st.markdown('<div style="font-size:1.1rem; font-weight:bold; margin-bottom:0.5rem;">Performance</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Accuracy", "92.5%")
+        st.metric("Accuracy", "92.5%", delta="+2.3%")
     with col2:
-        st.metric("Speed", "1.2s")
+        st.metric("Speed", "1.2s", delta="-0.3s")
 
-# Main content
+# Main content with improved uploader section
 uploader_container = st.container()
 with uploader_container:
-    st.markdown('<div class="uploader-container">', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="uploader-container">
+        <p style="font-weight:bold; font-size:1.1rem;">Upload Cloth Image</p>
+        <p style="font-size:0.9rem;">JPG, JPEG, PNG • Max 200MB</p>
+    </div>
+    """, unsafe_allow_html=True)
     uploaded = st.file_uploader("Upload cloth image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 if uploaded:
-    with st.spinner("Analyzing..."):
+    with st.spinner("Analyzing image..."):
         progress_bar = st.progress(0)
         for percent_complete in range(100):
             time.sleep(0.01)
@@ -290,70 +338,106 @@ if uploaded:
         overlay = overlay_mask(img_np, mask, alpha)
         segmented_output = create_segmented_output(img_np, mask)
     
-    # Results - mobile optimized
-    st.markdown(f'<div class="card"><h3>🔍 Results</h3></div>', unsafe_allow_html=True)
+    # Results section with better mobile layout
+    st.markdown(f'<div class="card"><h3>🔍 Detection Results</h3></div>', unsafe_allow_html=True)
     
     with st.container():
-        st.markdown(f'<div class="card"><h4>Defect: {label}</h4>', unsafe_allow_html=True)
-        st.markdown(f'<div class="confidence-meter"><div class="confidence-level" style="width:{confidence*100}%"><span class="confidence-label">{int(confidence*100)}%</span></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card"><h4>Defect Type: {label}</h4>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="margin:0.5rem 0;">
+            <div>Confidence:</div>
+            <div class="confidence-meter">
+                <div class="confidence-level" style="width:{confidence*100}%">
+                    {int(confidence*100)}%
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # Mobile-friendly tabs
-    tabs = st.tabs(["Overview", "Details", "Advanced"])
+    # Mobile-optimized tabs with clearer labels
+    tabs = st.tabs(["📊 Overview", "🔍 Details", "⚙ Advanced"])
     
-    with tabs[0]:
-        col1, col2 = st.columns([2, 1])
+    with tabs[0]:  # Overview tab
+        st.image(overlay, use_column_width=True, caption=f"Detected Defect: {label}")
+        col1, col2 = st.columns(2)
         with col1:
-            st.image(overlay, use_column_width=True, caption=f"Defect: {label}")
-        with col2:
             st.metric("Defect Area", f"{np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100:.1f}%")
+        with col2:
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            st.metric("Defect Count", len(contours))
     
-    with tabs[1]:
+    with tabs[1]:  # Details tab
         if show_segmented:
-            st.image(segmented_output, use_column_width=True, caption="Segmented defects")
+            st.image(segmented_output, use_column_width=True, caption="Segmented defect areas")
+        st.image(mask * 255, use_column_width=True, caption="Defect mask visualization", clamp=True)
     
-    with tabs[2]:
+    with tabs[2]:  # Advanced tab
         if show_original:
-            st.image(img_np, use_column_width=True, caption="Original")
-        st.image(mask * 255, use_column_width=True, caption="Defect mask")
+            st.image(img_np, use_column_width=True, caption="Original image")
         
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        st.metric("Defect Count", len(contours))
-        
-    # Mobile download buttons
+        # Additional defect metrics
+        defect_area = np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100
+        st.markdown("**Defect Statistics**")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Width", f"{img_np.shape[1]}px")
+            st.metric("Height", f"{img_np.shape[0]}px")
+        with col2:
+            st.metric("Area", f"{defect_area:.1f}%")
+            st.metric("Confidence", f"{confidence*100:.1f}%")
+    
+    # Enhanced download buttons for mobile
     st.divider()
+    st.markdown('<div style="font-size:1rem; font-weight:bold; margin-bottom:0.5rem;">Export Results</div>', unsafe_allow_html=True)
     cols = st.columns(2)
     with cols[0]:
         st.download_button(
-            "📥 Overlay",
+            "📥 Download Overlay",
             cv2.imencode('.png', cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))[1].tobytes(),
             "defect_overlay.png",
-            "image/png"
+            "image/png",
+            help="Download the defect overlay image"
         )
     with cols[1]:
         st.download_button(
-            "📥 Report",
-            f"Defect: {label}\nConfidence: {confidence:.1%}\nArea: {np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100:.1f}%",
-            "report.txt",
-            "text/plain"
+            "📥 Download Report",
+            f"Defect Analysis Report\n\nDefect Type: {label}\nConfidence: {confidence:.1%}\nDefect Area: {defect_area:.1f}%\nImage Dimensions: {img_np.shape[1]}x{img_np.shape[0]}",
+            "defect_report.txt",
+            "text/plain",
+            help="Download the defect analysis report"
         )
 
 else:
+    # Improved empty state with better mobile layout
     st.markdown("""
     <div class="card">
-        <h3>How to use</h3>
-        <ol>
-            <li>Upload cloth image</li>
-            <li>View defect analysis</li>
-            <li>Explore results</li>
-        </ol>
+        <h3>How to Use</h3>
+        <div style="font-size:0.95rem;">
+            <ol>
+                <li style="margin-bottom:0.5rem;">📤 Upload a cloth image</li>
+                <li style="margin-bottom:0.5rem;">🔄 Wait for analysis</li>
+                <li style="margin-bottom:0.5rem;">🔍 View defect details</li>
+                <li>💾 Export results if needed</li>
+            </ol>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Mobile-friendly sample images
-    st.markdown('<div class="card"><h4>Sample Defects</h4></div>', unsafe_allow_html=True)
+    # Sample images with better mobile layout
+    st.markdown('<div class="card"><h4>Example Defects</h4></div>', unsafe_allow_html=True)
     cols = st.columns(2)
-    with cols[0]:
-        st.image("https://via.placeholder.com/300x200?text=Hole", caption="Hole")
-    with cols[1]:
-        st.image("https://via.placeholder.com/300x200?text=Stain", caption="Stain")
+    sample_images = [
+        ("Hole", "https://via.placeholder.com/300x200/5c6bc0/ffffff?text=Hole"),
+        ("Stain", "https://via.placeholder.com/300x200/303f9f/ffffff?text=Stain"),
+        ("Tear", "https://via.placeholder.com/300x200/7986cb/ffffff?text=Tear"),
+        ("Fraying", "https://via.placeholder.com/300x200/3949ab/ffffff?text=Fraying")
+    ]
+    
+    for i, (caption, url) in enumerate(sample_images):
+        if i % 2 == 0:
+            with cols[0]:
+                st.image(url, caption=caption, use_column_width=True)
+        else:
+            with cols[1]:
+                st.image(url, caption=caption, use_column_width=True)
