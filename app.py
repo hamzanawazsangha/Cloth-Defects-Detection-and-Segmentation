@@ -398,22 +398,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sample Images
-st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
+st.markdown('<h4>Sample Cloth Types</h4>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1, 1, 1])
 
-# Image row with spacing and fixed size
-st.markdown("""
-<div class="image-row">
-    <div class="image-container">
-        <img src="whiteplain.jpg" alt="White Plain">
-        <div class="image-caption">White Plain</div>
-    </div>
-    <div class="image-container">
-        <img src="blueplaid.jpg" alt="Blue Plaid">
-        <div class="image-caption">Blue Plaid</div>
-    </div>
-    <div class="image-container">
-        <img src="brownplaid.jpg" alt="Brown Plaid">
-        <div class="image-caption">Brown Plaid</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+with col1:
+    st.image("whiteplain.jpg", caption="White Plain", use_column_width=False, width=200)
+with col2:
+    st.image("blueplaid.jpg", caption="Blue Plaid", use_column_width=False, width=200)
+with col3:
+    st.image("brownplaid.jpg", caption="Brown Plaid", use_column_width=False, width=200)
