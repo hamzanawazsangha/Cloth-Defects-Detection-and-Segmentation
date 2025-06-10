@@ -246,7 +246,7 @@ def create_segmented_output(original_img, mask):
 # Mobile-responsive app layout
 st.markdown('<div class="header"><h1>🧵 Cloth Defect Detection</h1></div>', unsafe_allow_html=True)
 
-# Sidebar - collapsible on mobile
+# Sidebar - fixed to avoid nested expanders
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
     alpha = st.slider("Mask Opacity", 0.1, 1.0, 0.5, 0.05)
@@ -254,17 +254,17 @@ with st.sidebar:
     show_original = st.checkbox("Show Original", False)
     
     st.markdown("---")
-    with st.expander("ℹ️ About"):
-        st.markdown("""
-        This app detects defects in cloth images using deep learning.
-        **Models:**
-        - Classifier: Identifies defect type
-        - Segmenter: Locates defect areas
-        """)
-        
-        with st.expander("📊 Metrics", expanded=False):
-            st.metric("Accuracy", "92.5%")
-            st.metric("Speed", "1.2s")
+    st.markdown("### ℹ️ About")
+    st.markdown("This app detects defects in cloth images using deep learning.")
+    st.markdown("**Models:**")
+    st.markdown("- Classifier: Identifies defect type")
+    st.markdown("- Segmenter: Locates defect areas")
+    
+    # Removed nested expander and replaced with simple metrics display
+    st.markdown("---")
+    st.markdown("### 📊 Performance Metrics")
+    st.metric("Accuracy", "92.5%")
+    st.metric("Processing Time", "1.2s")
 
 # Main content
 uploader_container = st.container()
