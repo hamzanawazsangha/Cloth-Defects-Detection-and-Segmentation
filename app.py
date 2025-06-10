@@ -375,8 +375,8 @@ else:
     st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.image("whiteplain.jpg/300x200?text=White Plain", caption="White Plain")
+        st.image("whiteplain.jpg", caption="White Plain", width=300)
     with col2:
-        st.image("blueplaid.jpg/300x200?text=Blue Plaid", caption="Blue Plaid")
+        st.image("blueplaid.jpg", caption="Blue Plaid", width=300)
     with col3:
-        st.image("brownplaid.jpg/300x200?text=Brown Plaid", caption="Brown Plaid")
+        st.image("brownplaid.jpg", caption="Brown Plaid", width=300)
