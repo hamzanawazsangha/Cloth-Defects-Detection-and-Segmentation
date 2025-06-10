@@ -372,11 +372,48 @@ else:
     """, unsafe_allow_html=True)
     
     # Sample images
-    st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.image("whiteplain.jpg", caption="White Plain", width=300)
-    with col2:
-        st.image("blueplaid.jpg", caption="Blue Plaid", width=300)
-    with col3:
-        st.image("brownplaid.jpg", caption="Brown Plaid", width=300)
+st.markdown("""
+    <style>
+        .image-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .image-container {
+            text-align: center;
+        }
+        .image-container img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .image-caption {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Sample Images
+st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
+
+# Image row with spacing and fixed size
+st.markdown("""
+<div class="image-row">
+    <div class="image-container">
+        <img src="whiteplain.jpg" alt="White Plain">
+        <div class="image-caption">White Plain</div>
+    </div>
+    <div class="image-container">
+        <img src="blueplaid.jpg" alt="Blue Plaid">
+        <div class="image-caption">Blue Plaid</div>
+    </div>
+    <div class="image-container">
+        <img src="brownplaid.jpg" alt="Brown Plaid">
+        <div class="image-caption">Brown Plaid</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
