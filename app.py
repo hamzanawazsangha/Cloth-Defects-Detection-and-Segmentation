@@ -246,25 +246,29 @@ def create_segmented_output(original_img, mask):
 # Mobile-responsive app layout
 st.markdown('<div class="header"><h1>🧵 Cloth Defect Detection</h1></div>', unsafe_allow_html=True)
 
-# Sidebar - fixed to avoid nested expanders
+# Sidebar - completely restructured to avoid any markdown nesting issues
 with st.sidebar:
-    st.markdown("### ⚙️ Settings")
+    st.header("Settings")
     alpha = st.slider("Mask Opacity", 0.1, 1.0, 0.5, 0.05)
     show_segmented = st.checkbox("Show Segmented", True)
     show_original = st.checkbox("Show Original", False)
     
-    st.markdown("---")
-    st.markdown("### ℹ️ About")
-    st.markdown("This app detects defects in cloth images using deep learning.")
-    st.markdown("**Models:**")
-    st.markdown("- Classifier: Identifies defect type")
-    st.markdown("- Segmenter: Locates defect areas")
+    st.divider()
     
-    # Removed nested expander and replaced with simple metrics display
-    st.markdown("---")
-    st.markdown("### 📊 Performance Metrics")
-    st.metric("Accuracy", "92.5%")
-    st.metric("Processing Time", "1.2s")
+    st.header("About")
+    st.write("This app detects defects in cloth images using deep learning.")
+    st.write("**Models:**")
+    st.write("- Classifier: Identifies defect type")
+    st.write("- Segmenter: Locates defect areas")
+    
+    st.divider()
+    
+    st.header("Performance Metrics")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Accuracy", "92.5%")
+    with col2:
+        st.metric("Speed", "1.2s")
 
 # Main content
 uploader_container = st.container()
@@ -317,7 +321,7 @@ if uploaded:
         st.metric("Defect Count", len(contours))
         
     # Mobile download buttons
-    st.markdown("---")
+    st.divider()
     cols = st.columns(2)
     with cols[0]:
         st.download_button(
