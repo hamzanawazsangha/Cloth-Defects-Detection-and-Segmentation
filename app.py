@@ -240,7 +240,7 @@ def create_segmented_output(original_img, mask):
     return segmented
 
 # App layout
-st.markdown('<div class="header"><h1>🧵 Advanced Cloth Analysis System</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header"><h1>🧵 Advanced Cloth Defects Detection System</h1></div>', unsafe_allow_html=True)
 
 # Sidebar for controls
 with st.sidebar:
@@ -375,8 +375,8 @@ else:
     st.markdown('<div class="card"><h4>Sample Cloth Types</h4></div>', unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.image("https://via.placeholder.com/300x200?text=Cotton", caption="Cotton")
+        st.image("whiteplain.jpg/300x200?text=White Plain", caption="White Plain")
     with col2:
-        st.image("https://via.placeholder.com/300x200?text=Silk", caption="Silk")
+        st.image("blueplaid.jpg/300x200?text=Blue Plaid", caption="Blue Plaid")
     with col3:
-        st.image("https://via.placeholder.com/300x200?text=Denim", caption="Denim")
+        st.image("brownplaid.jpg/300x200?text=Brown Plaid", caption="Brown Plaid")
