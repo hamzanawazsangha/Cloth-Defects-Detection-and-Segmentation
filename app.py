@@ -7,8 +7,9 @@ import json
 import time
 import plotly.graph_objects as go
 import plotly.express as px
-from streamlit_lottie import st_lottie
 import requests
+import io
+from datetime import datetime
 
 # Page configuration
 st.set_page_config(
@@ -34,8 +35,8 @@ st.markdown("""
         color: #2c3e50;
         text-align: center;
         padding: 2rem 0;
-        margin-bottom: 2rem;
-        border-radius: 20px;
+        margin: -1rem -1rem 2rem -1rem;
+        border-radius: 0 0 20px 20px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
@@ -123,6 +124,7 @@ st.markdown("""
         border-radius: 15px;
         text-align: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     /* Confidence meter */
@@ -176,50 +178,77 @@ st.markdown("""
         animation: fadeInUp 0.6s ease-out forwards;
     }
     
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    /* Status indicators */
+    .status-pass {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .status-review {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .status-fail {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    /* Feature highlights */
+    .feature-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        border-left: 4px solid #667eea;
     }
 </style>
 """, unsafe_allow_html=True)
 
-def load_lottie_url(url: str):
-    try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except:
-        return None
-
 @st.cache_resource
 def load_interpreters():
-    cls_int = tf.lite.Interpreter(model_path="classifier.tflite")
-    seg_int = tf.lite.Interpreter(model_path="segmentation_model.tflite")
-    cls_int.allocate_tensors()
-    seg_int.allocate_tensors()
+    try:
+        cls_int = tf.lite.Interpreter(model_path="classifier.tflite")
+        seg_int = tf.lite.Interpreter(model_path="segmentation_model.tflite")
+        cls_int.allocate_tensors()
+        seg_int.allocate_tensors()
 
-    # Get segmentation input details
-    seg_input_details = seg_int.get_input_details()[0]
-    seg_input_dtype = seg_input_details['dtype']
-    seg_input_scale, seg_input_zero_point = 1.0, 0
-    if 'quantization' in seg_input_details:
-        seg_input_scale, seg_input_zero_point = seg_input_details['quantization']
-    return cls_int, seg_int, seg_input_dtype, seg_input_scale, seg_input_zero_point
+        # Get segmentation input details
+        seg_input_details = seg_int.get_input_details()[0]
+        seg_input_dtype = seg_input_details['dtype']
+        seg_input_scale, seg_input_zero_point = 1.0, 0
+        if 'quantization' in seg_input_details:
+            seg_input_scale, seg_input_zero_point = seg_input_details['quantization']
+        return cls_int, seg_int, seg_input_dtype, seg_input_scale, seg_input_zero_point
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None, None, None, None, None
 
 @st.cache_resource
 def load_labels():
-    with open("class_labels.json") as f:
-        return json.load(f)
+    try:
+        with open("class_labels.json") as f:
+            return json.load(f)
+    except Exception as e:
+        st.error(f"Error loading labels: {e}")
+        return ["Unknown"] * 10
 
 # Load models and labels
-try:
-    cls_int, seg_int, seg_dtype, seg_scale, seg_zero_point = load_interpreters()
-    class_labels = load_labels()
-    models_loaded = True
-except Exception as e:
-    st.error(f"Error loading models: {e}")
-    models_loaded = False
+cls_int, seg_int, seg_dtype, seg_scale, seg_zero_point = load_interpreters()
+class_labels = load_labels()
+models_loaded = cls_int is not None and seg_int is not None
 
 def preprocess(img, size, dtype=tf.float32, scale=1.0, zero_point=0):
     img = cv2.resize(img, size)
@@ -235,6 +264,9 @@ def preprocess(img, size, dtype=tf.float32, scale=1.0, zero_point=0):
     return np.expand_dims(img, axis=0)
 
 def run_inference(img):
+    if not models_loaded:
+        return "Unknown", 0.0, np.zeros(img.shape[:2], dtype=np.uint8)
+    
     # Classification
     cls_input_details = cls_int.get_input_details()
     cls_dtype = cls_input_details[0]['dtype']
@@ -273,7 +305,7 @@ def run_inference(img):
 
 def overlay_mask(image, mask, alpha=0.5):
     colored_mask = np.zeros_like(image)
-    colored_mask[mask == 1] = [255, 0, 0]
+    colored_mask[mask == 1] = [255, 0, 0]  # Red for defects
     overlay = cv2.addWeighted(image, 1 - alpha, colored_mask, alpha, 0)
     
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -324,13 +356,46 @@ def create_defect_analysis_chart(mask, contours):
         fig.update_layout(
             title="Defect Size Analysis",
             template="plotly_white",
-            height=300
+            height=300,
+            showlegend=False
         )
     
     return fig
 
+def create_quality_gauge(quality_score):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number+delta",
+        value=quality_score,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "Quality Score", 'font': {'size': 20}},
+        gauge={
+            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "darkblue"},
+            'bgcolor': "white",
+            'borderwidth': 2,
+            'bordercolor': "gray",
+            'steps': [
+                {'range': [0, 50], 'color': 'lightcoral'},
+                {'range': [50, 80], 'color': 'lightyellow'},
+                {'range': [80, 100], 'color': 'lightgreen'}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': 90
+            }
+        }
+    ))
+    fig.update_layout(height=300)
+    return fig
+
 # App layout
-st.markdown('<div class="main-header"><h1>🧵 Advanced Cloth Defect Detection System</h1><p>AI-Powered Quality Control for Textile Manufacturing</p></div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="main-header">
+    <h1>🧵 Advanced Cloth Defect Detection System</h1>
+    <p>AI-Powered Quality Control for Textile Manufacturing</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
@@ -351,9 +416,10 @@ with st.sidebar:
     st.markdown("### 📊 System Info")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Model Status", "✅ Ready" if models_loaded else "❌ Error")
+        status_color = "✅" if models_loaded else "❌"
+        st.metric("Model Status", f"{status_color} {'Ready' if models_loaded else 'Error'}")
     with col2:
-        st.metric("Cloth Types", len(class_labels) if models_loaded else 0)
+        st.metric("Cloth Types", len(class_labels) if models_loaded else "N/A")
     
     st.markdown("---")
     
@@ -365,15 +431,17 @@ with st.sidebar:
     
     with st.expander("📖 About this System"):
         st.markdown("""
-        This advanced AI system provides:
-        - **Cloth Type Classification**
-        - **Defect Detection & Segmentation**
-        - **Quality Assessment Metrics**
-        - **Visual Analytics**
+        **Features:**
+        - 🧠 AI-powered cloth classification
+        - 🔍 Defect detection & segmentation
+        - 📊 Quality assessment metrics
+        - 📈 Interactive analytics
         
-        **Models Used:**
-        - EfficientNet Classifier
-        - U-Net Segmenter
+        **Technology Stack:**
+        - TensorFlow Lite Models
+        - OpenCV Image Processing
+        - Plotly Visualizations
+        - Streamlit Interface
         """)
 
 # Main content area
@@ -394,16 +462,22 @@ with col1:
 
 with col2:
     st.markdown('<div class="custom-card">', unsafe_allow_html=True)
-    st.markdown("### 🎨 Sample Gallery")
+    st.markdown("### 🚀 Quick Start")
     
-    sample_cols = st.columns(2)
-    with sample_cols[0]:
-        if st.button("White Plain", use_container_width=True):
-            # Placeholder for sample image loading
-            st.info("Sample feature coming soon!")
-    with sample_cols[1]:
-        if st.button("Blue Plaid", use_container_width=True):
-            st.info("Sample feature coming soon!")
+    st.markdown("""
+    <div class="feature-item">
+        <strong>Fast Analysis</strong><br>
+        Get results in seconds
+    </div>
+    <div class="feature-item">
+        <strong>High Accuracy</strong><br>
+        AI-powered detection
+    </div>
+    <div class="feature-item">
+        <strong>Export Results</strong><br>
+        Download reports & images
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Processing and Results
@@ -413,10 +487,15 @@ if uploaded_file and models_loaded:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        for percent in range(0, 101, 20):
-            progress_bar.progress(percent)
-            status_text.text(f"Processing... {percent}%")
-            time.sleep(0.3)
+        # Simulate processing steps
+        steps = ["Loading image...", "Preprocessing...", "Classifying cloth type...", 
+                "Detecting defects...", "Generating report..."]
+        
+        for i, step in enumerate(steps):
+            progress = (i + 1) * 20
+            progress_bar.progress(progress)
+            status_text.text(f"🔄 {step}")
+            time.sleep(0.5)
         
         # Load and process image
         image = Image.open(uploaded_file).convert("RGB")
@@ -435,12 +514,12 @@ if uploaded_file and models_loaded:
 
     # Results Section
     st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
-    st.markdown('<div class="custom-card">', unsafe_allow_html=True)
-    st.markdown("## 📊 Analysis Results")
-    st.markdown('</div>', unsafe_allow_html=True)
     
     # Metrics Row
     col1, col2, col3, col4 = st.columns(4)
+    
+    defect_percentage = np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     with col1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -448,30 +527,35 @@ if uploaded_file and models_loaded:
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
-        defect_percentage = np.sum(mask) / (mask.shape[0] * mask.shape[1]) * 100
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Defect Area", f"{defect_percentage:.2f}%")
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col3:
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Defect Count", len(contours))
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col4:
-        status = "✅ Pass" if defect_percentage < 5 else "⚠️ Review" if defect_percentage < 15 else "❌ Fail"
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Quality Status", status)
-        st.markdown('</div>', unsafe_allow_html=True)
+        if defect_percentage < 2:
+            status = "✅ Pass"
+            status_class = "status-pass"
+        elif defect_percentage < 10:
+            status = "⚠️ Review"
+            status_class = "status-review"
+        else:
+            status = "❌ Fail"
+            status_class = "status-fail"
+        
+        st.markdown(f'<div class="metric-card"><div class="{status_class}">{status}</div></div>', unsafe_allow_html=True)
     
     # Confidence Visualization
     st.markdown('<div class="custom-card">', unsafe_allow_html=True)
     st.markdown("### 🎯 Classification Confidence")
-    st.markdown(f'**Cloth Type:** {label}')
     
     col_conf1, col_conf2 = st.columns([3, 1])
     with col_conf1:
+        st.markdown(f"**Cloth Type:** {label}")
         st.markdown(f"""
         <div class="confidence-container">
             <div class="confidence-bar">
@@ -482,7 +566,7 @@ if uploaded_file and models_loaded:
         </div>
         """, unsafe_allow_html=True)
     with col_conf2:
-        st.metric("Score", f"{confidence*100:.1f}%")
+        st.metric("Confidence Score", f"{confidence*100:.1f}%")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Visualization Tabs
@@ -504,30 +588,28 @@ if uploaded_file and models_loaded:
         st.markdown('<div class="custom-card">', unsafe_allow_html=True)
         st.markdown("### 🔍 Detailed Segmentation")
         
-        if show_segmented:
-            seg_col1, seg_col2 = st.columns(2)
-            with seg_col1:
-                st.image(segmented_output, use_column_width=True, 
-                        caption="Isolated Defects (Transparent Background)")
-            with seg_col2:
-                if show_heatmap:
-                    heatmap = cv2.applyColorMap((mask * 255).astype(np.uint8), cv2.COLORMAP_JET)
-                    heatmap = cv2.addWeighted(img_np, 0.7, heatmap, 0.3, 0)
-                    st.image(heatmap, use_column_width=True, caption="Defect Heatmap")
+        seg_col1, seg_col2 = st.columns(2)
+        with seg_col1:
+            st.image(segmented_output, use_column_width=True, 
+                    caption="Isolated Defects (Transparent Background)")
+        with seg_col2:
+            if show_heatmap:
+                heatmap = cv2.applyColorMap((mask * 255).astype(np.uint8), cv2.COLORMAP_JET)
+                heatmap = cv2.addWeighted(img_np, 0.7, heatmap, 0.3, 0)
+                st.image(heatmap, use_column_width=True, caption="Defect Heatmap")
         st.markdown('</div>', unsafe_allow_html=True)
     
     with tabs[2]:
         st.markdown('<div class="custom-card">', unsafe_allow_html=True)
         st.markdown("### 📈 Comprehensive Analysis")
         
-        if show_original:
-            st.image(img_np, use_column_width=True, caption="Original Image")
-        
-        # Detailed metrics
         col_det1, col_det2 = st.columns(2)
         
         with col_det1:
             st.markdown("#### Defect Statistics")
+            if show_original:
+                st.image(img_np, use_column_width=True, caption="Original Image")
+            
             st.image(mask * 255, use_column_width=True, caption="Binary Mask", clamp=True)
             
             if len(contours) > 0:
@@ -540,30 +622,18 @@ if uploaded_file and models_loaded:
         
         with col_det2:
             st.markdown("#### Quality Metrics")
-            
-            # Quality score calculation
             quality_score = max(0, 100 - defect_percentage * 2)
-            fig_gauge = go.Figure(go.Indicator(
-                mode = "gauge+number+delta",
-                value = quality_score,
-                domain = {'x': [0, 1], 'y': [0, 1]},
-                title = {'text': "Quality Score"},
-                gauge = {
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, 50], 'color': "lightgray"},
-                        {'range': [50, 80], 'color': "gray"},
-                        {'range': [80, 100], 'color': "lightblue"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 90
-                    }
-                }
-            ))
-            st.plotly_chart(fig_gauge, use_container_width=True)
+            st.plotly_chart(create_quality_gauge(quality_score), use_container_width=True)
+            
+            # Additional metrics
+            st.markdown("##### Defect Summary")
+            col_met1, col_met2 = st.columns(2)
+            with col_met1:
+                st.metric("Total Defect Area", f"{np.sum(mask):,} px")
+                st.metric("Avg Defect Size", f"{np.mean([cv2.contourArea(cnt) for cnt in contours]):.0f} px" if contours else "0 px")
+            with col_met2:
+                st.metric("Image Dimensions", f"{img_np.shape[1]}×{img_np.shape[0]}")
+                st.metric("Analysis Time", datetime.now().strftime("%H:%M:%S"))
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Download Section
@@ -573,25 +643,72 @@ if uploaded_file and models_loaded:
     col_dl1, col_dl2, col_dl3 = st.columns(3)
     
     with col_dl1:
-        if st.button("💾 Download Overlay Image", use_container_width=True):
-            # Implementation for download
-            st.success("Overlay image ready for download!")
+        # Convert overlay to bytes for download
+        overlay_bytes = cv2.imencode('.png', cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))[1].tobytes()
+        st.download_button(
+            label="💾 Download Overlay",
+            data=overlay_bytes,
+            file_name="defect_overlay.png",
+            mime="image/png",
+            use_container_width=True
+        )
     
     with col_dl2:
-        if st.button("📊 Download Analysis Report", use_container_width=True):
-            # Implementation for report download
-            st.success("Analysis report generated!")
+        # Create and download report
+        report_text = f"""
+CLOTH DEFECT ANALYSIS REPORT
+Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+CLOTH INFORMATION:
+- Type: {label}
+- Classification Confidence: {confidence*100:.1f}%
+
+DEFECT ANALYSIS:
+- Total Defect Area: {defect_percentage:.2f}%
+- Number of Defects: {len(contours)}
+- Quality Status: {'PASS' if defect_percentage < 2 else 'REVIEW' if defect_percentage < 10 else 'FAIL'}
+
+IMAGE DETAILS:
+- Dimensions: {img_np.shape[1]} x {img_np.shape[0]} pixels
+- Total Pixels: {img_np.shape[0] * img_np.shape[1]:,}
+- Defect Pixels: {np.sum(mask):,}
+
+--- END OF REPORT ---
+        """
+        st.download_button(
+            label="📊 Download Report",
+            data=report_text,
+            file_name="cloth_analysis_report.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
     
     with col_dl3:
-        if st.button("🖼️ Download Segmented Image", use_container_width=True):
-            # Implementation for segmented image download
-            st.success("Segmented image ready!")
+        # Convert segmented output to bytes for download
+        segmented_bytes = cv2.imencode('.png', cv2.cvtColor(segmented_output, cv2.COLOR_RGBA2BGRA))[1].tobytes()
+        st.download_button(
+            label="🖼️ Download Segmented",
+            data=segmented_bytes,
+            file_name="segmented_defects.png",
+            mime="image/png",
+            use_container_width=True
+        )
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif not models_loaded:
-    st.error("🚨 Models failed to load. Please check if the model files are available.")
+    st.error("""
+    🚨 **Models failed to load!** 
+    
+    Please ensure that the following files are available:
+    - `classifier.tflite`
+    - `segmentation_model.tflite` 
+    - `class_labels.json`
+    
+    Check the file paths and try again.
+    """)
+
 else:
     # Welcome section when no image is uploaded
     st.markdown('<div class="custom-card">', unsafe_allow_html=True)
@@ -605,35 +722,40 @@ else:
         **Transform your textile quality control with AI-powered defect detection.**
         
         ### 🚀 How it works:
-        1. **Upload** a cloth image using the uploader
+        1. **Upload** a cloth image using the uploader above
         2. **AI Analysis** automatically detects cloth type and defects
         3. **Visualize** results with interactive charts and overlays
         4. **Export** detailed reports and images
         
-        ### 🎯 Key Features:
-        - 🔍 **Automatic cloth type classification**
-        - 🎨 **Visual defect segmentation**
-        - 📊 **Comprehensive quality metrics**
-        - 📈 **Interactive analytics dashboard**
-        - 💾 **Export capabilities**
+        ### 🎯 Supported Features:
+        - Automatic cloth type classification
+        - Visual defect segmentation  
+        - Comprehensive quality metrics
+        - Interactive analytics dashboard
+        - Export capabilities
         
-        *Upload an image to get started!*
+        *Ready to start? Upload an image above!*
         """)
     
     with col_welcome2:
-        st.markdown("### 🏆 Benefits")
+        st.markdown("### 🏆 Quality Standards")
         st.info("""
-        **✅ Improved Accuracy**  
-        AI-powered detection reduces human error
+        **✅ Excellent Quality**  
+        Defect area < 2%
         
-        **⚡ Faster Inspection**  
-        Process images in seconds, not minutes
+        **⚠️ Needs Review**  
+        Defect area 2-10%
         
-        **📈 Consistent Quality**  
-        Maintain uniform quality standards
+        **❌ Failed**  
+        Defect area > 10%
+        """)
         
-        **💡 Data-Driven Insights**  
-        Get detailed analytics and reports
+        st.markdown("### 📋 Supported Types")
+        st.success("""
+        - Plain fabrics
+        - Plaid patterns  
+        - Various textures
+        - Multiple colors
         """)
     
     st.markdown('</div>', unsafe_allow_html=True)
@@ -643,6 +765,6 @@ st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: white; padding: 2rem;'>
     <p>🧵 <strong>Advanced Cloth Defect Detection System</strong> | AI-Powered Quality Control</p>
-    <p style='font-size: 0.8rem; opacity: 0.8;'>Built with TensorFlow Lite & Streamlit</p>
+    <p style='font-size: 0.8rem; opacity: 0.8;'>Built with TensorFlow Lite & Streamlit | {}</p>
 </div>
-""", unsafe_allow_html=True)
+""".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
